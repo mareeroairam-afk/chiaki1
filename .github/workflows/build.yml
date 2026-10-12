@@ -1,0 +1,39 @@
+name: Build APK
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Accept licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: Install NDK and CMake
+        run: $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --verbose "ndk;25.1.8937393" "cmake;3.22.1"
+
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler libprotobuf-dev libssl-dev nasm ninja-build
+          pip3 install protobuf grpcio-tools
+          which protoc
+          protoc --version
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug -Pandroid.injected.cmake.args="-DProtobuf_PROTOC_EXECUTABLE=/usr/bin/protoc"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: android/app/build/outputs/apk/debug/*.apk
