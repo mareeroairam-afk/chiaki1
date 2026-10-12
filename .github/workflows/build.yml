@@ -11,7 +11,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 11
 
       - name: Accept licenses
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
@@ -33,7 +33,4 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug -Pandroid.injected.cmake.args="-DProtobuf_PROTOC_EXECUTABLE=/usr/bin/protoc"
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: apk
-          path: android/app/build/outputs/apk/debug/*.apk
+      - uses: actions/uploa
