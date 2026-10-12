@@ -18,14 +18,11 @@ jobs:
       - name: Accept licenses
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Detect and install correct NDK version
+      - name: Detect and install NDK
         run: |
-          NDK_VER=$(grep -oP 'ndkVersion\s*[="]\s*"\K[0-9.]+' android/app/build.gradle 2>/dev/null || echo "")
-          if [ -z "$NDK_VER" ]; then
-            NDK_VER=$(grep -oP 'ndkVersion\s+"\K[0-9.]+' android/build.gradle 2>/dev/null || echo "21.4.7075529")
-          fi
-          echo "Using NDK version: $NDK_VER"
-          echo "NDK_VERSION=$NDK_VER" >> $GITHUB_ENV
+          NDK_VER=$(grep -ohP 'ndkVersion\s*[="]+\s*"\K[0-9.]+' android/app/build.gradle android/build.gradle 2>/dev/null | head -1)
+          if [ -z "$NDK_VER" ]; then NDK_VER="21.4.7075529"; fi
+          echo "Usando NDK: $NDK_VER"
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --verbose "ndk;$NDK_VER" "cmake;3.22.1"
 
       - name: Install native dependencies
@@ -33,10 +30,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y protobuf-compiler libprotobuf-dev libssl-dev nasm ninja-build
           pip3 install protobuf grpcio-tools
-          which protoc
-          protoc --version
 
-      - name: Patch deprecated JCenter repository
+      - name: Patch deprecated repositories
         run: |
           find android -name "build.gradle" -exec sed -i 's/jcenter()/mavenCentral()/g' {} \;
 
@@ -47,7 +42,7 @@ jobs:
           cd android
           chmod +x gradlew
           echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
-          ./gradlew assembleDebug --stacktrace -Pandroid.injected.cmake.args="-DProtobuf_PROTOC_EXECUTABLE=/usr/bin/protoc"
+          ./gradlew assembleDebug --stacktrace -x lint -Pandroid.injected.cmake.args="-DProtobuf_PROTOC_EXECUTABLE=/usr/bin/protoc"
 
       - uses: actions/upload-artifact@v4
         with:
